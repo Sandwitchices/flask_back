@@ -1,5 +1,6 @@
 import os
 import openai
+import logging
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
@@ -25,7 +26,11 @@ if not os.path.exists(app.config['DOCX_FOLDER']):
 # Set your OpenAI API key from environment variable
 openai.api_key = os.getenv('OPENAI_API_KEY')
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+
 def generate_summary(text):
+    logging.info("Generating summary using OpenAI API")
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[
@@ -38,6 +43,7 @@ def generate_summary(text):
         temperature=0.7,
     )
     summary = response['choices'][0]['message']['content'].strip()
+    logging.info("Summary generated successfully")
     return summary
 
 @app.route('/')
@@ -58,6 +64,7 @@ def parse_file():
     file.save(file_path)
 
     try:
+        logging.info(f"Processing file: {filename}")
         doc_content = ""
         if file.filename.endswith('.pptx'):
             # Parse the PowerPoint file
@@ -66,6 +73,7 @@ def parse_file():
                 for shape in slide.shapes:
                     if shape.has_text_frame:
                         doc_content += shape.text.strip() + "\n"
+            logging.info("PPTX file parsed successfully")
 
         elif file.filename.endswith('.pdf'):
             # Parse the PDF file
@@ -73,6 +81,7 @@ def parse_file():
             for page_num in range(len(pdf_document)):
                 page = pdf_document.load_page(page_num)
                 doc_content += page.get_text("text") + "\n"
+            logging.info("PDF file parsed successfully")
 
         else:
             return jsonify({"error": "Invalid file format. Only .pptx and .pdf files are allowed"}), 400
@@ -90,6 +99,7 @@ def parse_file():
         return send_file(docx_path, as_attachment=True)
 
     except Exception as e:
+        logging.error(f"Error parsing file: {e}")
         return jsonify({"error": f"Error parsing file: {str(e)}"}), 500
 
 if __name__ == '__main__':
