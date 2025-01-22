@@ -2,4 +2,5 @@ Flask
 flask-cors
 python-pptx
 python-docx
+PyMuPDF
 gunicorn
