@@ -22,8 +22,8 @@ if not os.path.exists(app.config['UPLOAD_FOLDER']):
 if not os.path.exists(app.config['DOCX_FOLDER']):
     os.makedirs(app.config['DOCX_FOLDER'])
 
-# Set your OpenAI API key
-openai.api_key = 'OPENAI_API_KEY'
+# Set your OpenAI API key from environment variable
+openai.api_key = os.getenv('OPENAI_API_KEY')
 
 def generate_summary(text):
     response = openai.ChatCompletion.create(
