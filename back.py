@@ -31,14 +31,15 @@ logging.basicConfig(level=logging.INFO)
 
 def generate_summary(text):
     logging.info("Generating summary using OpenAI API")
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": f"Simplify and summarize the following content for students to review:\n\n{text}"}
-        ]
+    response = openai.Completion.create(
+        engine="text-davinci-003",
+        prompt=f"Simplify and summarize the following content for students to review:\n\n{text}",
+        max_tokens=1024,
+        n=1,
+        stop=None,
+        temperature=0.7,
     )
-    summary = response.choices[0].message['content'].strip()
+    summary = response.choices[0].text.strip()
     logging.info("Summary generated successfully")
     return summary
 
