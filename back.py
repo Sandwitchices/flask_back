@@ -38,7 +38,7 @@ def generate_summary(text):
             {"role": "user", "content": f"Simplify and summarize the following content for students to review:\n\n{text}"}
         ]
     )
-    summary = response['choices'][0]['message']['content'].strip()
+    summary = response.choices[0].message['content'].strip()
     logging.info("Summary generated successfully")
     return summary
 
