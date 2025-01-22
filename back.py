@@ -23,8 +23,7 @@ if not os.path.exists(app.config['DOCX_FOLDER']):
     os.makedirs(app.config['DOCX_FOLDER'])
 
 # Set your OpenAI API key
-openai.api_key = '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
-'
+openai.api_key = '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'
 
 def generate_summary(text):
     response = openai.ChatCompletion.create(
