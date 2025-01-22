@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS  # Import CORS
 from werkzeug.utils import secure_filename
 from pptx import Presentation
+import os
 
 app = Flask(__name__)
 
