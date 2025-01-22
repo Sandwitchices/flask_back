@@ -1,53 +1,55 @@
-from flask import Flask, request, jsonify
-from pptx import Presentation
 import os
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+from werkzeug.utils import secure_filename
+from pptx import Presentation
 
 app = Flask(__name__)
+CORS(app)
 
-UPLOAD_FOLDER = 'uploads'
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+# Directory for uploaded files
+UPLOAD_FOLDER = "uploads"
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)  # Create the uploads folder if it doesn't exist
 
 @app.route('/')
 def home():
-    return jsonify({"message": "Welcome to the PPT Parser API!"})
-
+    return "Welcome to the PPT Parser API!"
 
 @app.route('/parse', methods=['POST'])
 def parse_ppt():
     if 'file' not in request.files:
-        return jsonify({"error": "No file part in the request"}), 400
-    
+        return jsonify({"error": "No file uploaded"}), 400
+
     file = request.files['file']
     if file.filename == '':
-        return jsonify({"error": "No file selected for uploading"}), 400
-    
-    if not file.filename.endswith('.pptx'):
-        return jsonify({"error": "Unsupported file format. Please upload a .pptx file."}), 400
-    
-    file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
-    file.save(file_path)
-    
-    try:
-        # Parse the PPTX file
-        presentation = Presentation(file_path)
-        content = []
-        for slide in presentation.slides:
-            slide_content = []
-            for shape in slide.shapes:
-                if shape.has_text_frame:
-                    slide_content.append(shape.text)
-            content.append({"slide": len(content) + 1, "text": slide_content})
-        
-        return jsonify({"slides": content}), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    finally:
-        # Clean up: Remove the uploaded file
-        if os.path.exists(file_path):
-            os.remove(file_path)
+        return jsonify({"error": "No selected file"}), 400
+
+    if file and file.filename.endswith('.pptx'):
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(file_path)
+
+        try:
+            # Parse the PowerPoint file
+            presentation = Presentation(file_path)
+            slides_content = []
+            for i, slide in enumerate(presentation.slides):
+                slide_text = []
+                for shape in slide.shapes:
+                    if shape.has_text_frame:
+                        slide_text.append(shape.text.strip())
+                slides_content.append({"slide": i + 1, "text": slide_text})
+
+            return jsonify({"slides": slides_content}), 200
+
+        except Exception as e:
+            return jsonify({"error": f"Error parsing PPTX file: {str(e)}"}), 500
+
+    return jsonify({"error": "Invalid file format. Only .pptx files are allowed"}), 400
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Get port dynamically assigned by environment (for platforms like Render)
+    port = int(os.environ.get('PORT', 5000))  # Default to 5000 if PORT is not set
+    app.run(host='0.0.0.0', port=port)
