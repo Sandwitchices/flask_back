@@ -4,6 +4,7 @@ from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from pptx import Presentation
 from docx import Document
+import fitz  # PyMuPDF
 
 app = Flask(__name__)
 
@@ -22,10 +23,10 @@ if not os.path.exists(app.config['DOCX_FOLDER']):
 
 @app.route('/')
 def home():
-    return "Welcome to the PPT Parser API!"
+    return "Welcome to the PPT and PDF Parser API!"
 
 @app.route('/parse', methods=['POST'])
-def parse_ppt():
+def parse_file():
     if 'file' not in request.files:
         return jsonify({"error": "No file uploaded"}), 400
 
@@ -33,22 +34,20 @@ def parse_ppt():
     if file.filename == '':
         return jsonify({"error": "No selected file"}), 400
 
-    if file and file.filename.endswith('.pptx'):
-        filename = secure_filename(file.filename)
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(file_path)
+    filename = secure_filename(file.filename)
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    file.save(file_path)
 
-        try:
+    try:
+        if file.filename.endswith('.pptx'):
             # Parse the PowerPoint file
             presentation = Presentation(file_path)
-            slides_content = []
             doc = Document()
             for i, slide in enumerate(presentation.slides):
                 slide_text = []
                 for shape in slide.shapes:
                     if shape.has_text_frame:
                         slide_text.append(shape.text.strip())
-                slides_content.append({"slide": i + 1, "text": slide_text})
                 doc.add_heading(f"Slide {i + 1}", level=1)
                 for text in slide_text:
                     doc.add_paragraph(text)
@@ -57,12 +56,27 @@ def parse_ppt():
             docx_path = os.path.join(app.config['DOCX_FOLDER'], docx_filename)
             doc.save(docx_path)
 
-            return send_file(docx_path, as_attachment=True)
+        elif file.filename.endswith('.pdf'):
+            # Parse the PDF file
+            doc = Document()
+            pdf_document = fitz.open(file_path)
+            for page_num in range(len(pdf_document)):
+                page = pdf_document.load_page(page_num)
+                page_text = page.get_text("text")
+                doc.add_heading(f"Page {page_num + 1}", level=1)
+                doc.add_paragraph(page_text)
 
-        except Exception as e:
-            return jsonify({"error": f"Error parsing PPTX file: {str(e)}"}), 500
+            docx_filename = f"{os.path.splitext(filename)[0]}.docx"
+            docx_path = os.path.join(app.config['DOCX_FOLDER'], docx_filename)
+            doc.save(docx_path)
 
-    return jsonify({"error": "Invalid file format. Only .pptx files are allowed"}), 400
+        else:
+            return jsonify({"error": "Invalid file format. Only .pptx and .pdf files are allowed"}), 400
+
+        return send_file(docx_path, as_attachment=True)
+
+    except Exception as e:
+        return jsonify({"error": f"Error parsing file: {str(e)}"}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))  # Dynamically set port
