@@ -1,4 +1,5 @@
 import os
+import openai
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
@@ -21,6 +22,21 @@ if not os.path.exists(app.config['UPLOAD_FOLDER']):
 if not os.path.exists(app.config['DOCX_FOLDER']):
     os.makedirs(app.config['DOCX_FOLDER'])
 
+# Set your OpenAI API key
+openai.api_key = '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'
+
+def generate_summary(text):
+    response = openai.Completion.create(
+        engine="text-davinci-003",
+        prompt=f"Simplify and summarize the following content for students to review:\n\n{text}",
+        max_tokens=1024,
+        n=1,
+        stop=None,
+        temperature=0.7,
+    )
+    summary = response.choices[0].text.strip()
+    return summary
+
 @app.route('/')
 def home():
     return "Welcome to the PPT and PDF Parser API!"
@@ -39,39 +55,34 @@ def parse_file():
     file.save(file_path)
 
     try:
+        doc_content = ""
         if file.filename.endswith('.pptx'):
             # Parse the PowerPoint file
             presentation = Presentation(file_path)
-            doc = Document()
             for i, slide in enumerate(presentation.slides):
-                slide_text = []
                 for shape in slide.shapes:
                     if shape.has_text_frame:
-                        slide_text.append(shape.text.strip())
-                doc.add_heading(f"Slide {i + 1}", level=1)
-                for text in slide_text:
-                    doc.add_paragraph(text)
-
-            docx_filename = f"{os.path.splitext(filename)[0]}.docx"
-            docx_path = os.path.join(app.config['DOCX_FOLDER'], docx_filename)
-            doc.save(docx_path)
+                        doc_content += shape.text.strip() + "\n"
 
         elif file.filename.endswith('.pdf'):
             # Parse the PDF file
-            doc = Document()
             pdf_document = fitz.open(file_path)
             for page_num in range(len(pdf_document)):
                 page = pdf_document.load_page(page_num)
-                page_text = page.get_text("text")
-                doc.add_heading(f"Page {page_num + 1}", level=1)
-                doc.add_paragraph(page_text)
-
-            docx_filename = f"{os.path.splitext(filename)[0]}.docx"
-            docx_path = os.path.join(app.config['DOCX_FOLDER'], docx_filename)
-            doc.save(docx_path)
+                doc_content += page.get_text("text") + "\n"
 
         else:
             return jsonify({"error": "Invalid file format. Only .pptx and .pdf files are allowed"}), 400
+
+        # Generate summary using OpenAI API
+        simplified_content = generate_summary(doc_content)
+
+        # Create DOCX file with simplified content
+        doc = Document()
+        doc.add_paragraph(simplified_content)
+        docx_filename = f"{os.path.splitext(filename)[0]}.docx"
+        docx_path = os.path.join(app.config['DOCX_FOLDER'], docx_filename)
+        doc.save(docx_path)
 
         return send_file(docx_path, as_attachment=True)
 
