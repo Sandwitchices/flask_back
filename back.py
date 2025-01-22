@@ -1,15 +1,12 @@
-import os
 from flask import Flask, request, jsonify
+from flask_cors import CORS  # Import CORS
 from werkzeug.utils import secure_filename
 from pptx import Presentation
 
 app = Flask(__name__)
 
-
-# Directory for uploaded files
-UPLOAD_FOLDER = "uploads"
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)  # Create the uploads folder if it doesn't exist
+# Enable CORS for all domains (use a specific domain if needed)
+CORS(app)
 
 @app.route('/')
 def home():
@@ -47,8 +44,6 @@ def parse_ppt():
 
     return jsonify({"error": "Invalid file format. Only .pptx files are allowed"}), 400
 
-
 if __name__ == '__main__':
-    # Get port dynamically assigned by environment (for platforms like Render)
-    port = int(os.environ.get('PORT', 5000))  # Default to 5000 if PORT is not set
+    port = int(os.environ.get('PORT', 5000))  # Dynamically set port
     app.run(host='0.0.0.0', port=port)
