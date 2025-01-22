@@ -36,11 +36,7 @@ def generate_summary(text):
         messages=[
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": f"Simplify and summarize the following content for students to review:\n\n{text}"}
-        ],
-        max_tokens=1024,
-        n=1,
-        stop=None,
-        temperature=0.7,
+        ]
     )
     summary = response['choices'][0]['message']['content'].strip()
     logging.info("Summary generated successfully")
