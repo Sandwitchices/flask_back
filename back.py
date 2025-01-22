@@ -1,11 +1,10 @@
 import os
 from flask import Flask, request, jsonify
-from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from pptx import Presentation
 
 app = Flask(__name__)
-CORS(app)
+
 
 # Directory for uploaded files
 UPLOAD_FOLDER = "uploads"
