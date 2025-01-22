@@ -23,18 +23,22 @@ if not os.path.exists(app.config['DOCX_FOLDER']):
     os.makedirs(app.config['DOCX_FOLDER'])
 
 # Set your OpenAI API key
-openai.api_key = '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'
+openai.api_key = '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
+'
 
 def generate_summary(text):
-    response = openai.Completion.create(
-        engine="text-davinci-003",
-        prompt=f"Simplify and summarize the following content for students to review:\n\n{text}",
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": f"Simplify and summarize the following content for students to review:\n\n{text}"}
+        ],
         max_tokens=1024,
         n=1,
         stop=None,
         temperature=0.7,
     )
-    summary = response.choices[0].text.strip()
+    summary = response['choices'][0]['message']['content'].strip()
     return summary
 
 @app.route('/')
