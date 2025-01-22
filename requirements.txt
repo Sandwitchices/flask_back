@@ -3,5 +3,5 @@ flask-cors
 python-pptx
 python-docx
 PyMuPDF
-openai==0.27.0
+openai==0.27.6
 gunicorn
