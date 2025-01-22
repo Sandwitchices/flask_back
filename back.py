@@ -1,13 +1,20 @@
+import os
 from flask import Flask, request, jsonify
-from flask_cors import CORS  # Import CORS
+from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from pptx import Presentation
-import os
 
 app = Flask(__name__)
 
-# Enable CORS for all domains (use a specific domain if needed)
+# Enable CORS for all domains
 CORS(app)
+
+# Configure upload folder
+app.config['UPLOAD_FOLDER'] = 'uploads'
+
+# Ensure the upload folder exists
+if not os.path.exists(app.config['UPLOAD_FOLDER']):
+    os.makedirs(app.config['UPLOAD_FOLDER'])
 
 @app.route('/')
 def home():
